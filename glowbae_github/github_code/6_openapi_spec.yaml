@@ -1,0 +1,209 @@
+# =============================================================================
+# FILE: lib/api-spec/openapi.yaml
+# GLOWBae — OpenAPI 3.1 Contract (source of truth for codegen)
+# =============================================================================
+
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: GLOWBae AI Beauty Recommendation API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: recommendations
+    description: AI product recommendation operations
+  - name: products
+    description: Product catalog operations
+  - name: metadata
+    description: Skin profile metadata
+
+paths:
+  /recommendations:
+    post:
+      operationId: getRecommendations
+      tags: [recommendations]
+      summary: Get AI product recommendations
+      description: Uses cosine similarity to rank products based on skin profile and budget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkinProfileInput"
+      responses:
+        "200":
+          description: Ranked product recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductRecommendation"
+        "400":
+          description: Invalid input
+
+  /products:
+    get:
+      operationId: getProducts
+      tags: [products]
+      summary: Get all products
+      responses:
+        "200":
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/trending:
+    get:
+      operationId: getTrendingProducts
+      tags: [products]
+      summary: Get trending products (top 8 by rating)
+      responses:
+        "200":
+          description: Trending products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/categories:
+    get:
+      operationId: getProductCategories
+      tags: [products]
+      summary: Get product categories breakdown
+      responses:
+        "200":
+          description: Category breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryCount"
+
+  /skin-metadata:
+    get:
+      operationId: getSkinMetadata
+      tags: [metadata]
+      summary: Get skin profile metadata for quiz
+      responses:
+        "200":
+          description: Skin metadata options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkinMetadata"
+
+components:
+  schemas:
+    SkinProfileInput:
+      type: object
+      required: [skinType, concern, budget]
+      properties:
+        skinType:
+          type: string
+          description: "e.g. Oily, Dry, Combination, Normal, Sensitive"
+        concern:
+          type: string
+          description: "e.g. Acne, Aging, Brightening, Hydration"
+        budget:
+          type: number
+          description: Max budget in INR
+
+    Product:
+      type: object
+      required: [id, name, brand, category, price, skinTypes, concerns, rating, purplleUrl]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        brand:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        skinTypes:
+          type: array
+          items:
+            type: string
+        concerns:
+          type: array
+          items:
+            type: string
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        purplleUrl:
+          type: string
+          description: Direct link to Purplle.com for purchase
+        description:
+          type: ["string", "null"]
+        keyIngredients:
+          type: array
+          items:
+            type: string
+
+    ProductRecommendation:
+      type: object
+      required: [product, score, rank, matchReasons]
+      properties:
+        product:
+          $ref: "#/components/schemas/Product"
+        score:
+          type: number
+          description: Cosine similarity score (0–1)
+        rank:
+          type: integer
+          description: Rank position (1 = best match)
+        matchReasons:
+          type: array
+          items:
+            type: string
+
+    CategoryCount:
+      type: object
+      required: [category, count]
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+
+    SkinMetadata:
+      type: object
+      required: [skinTypes, concerns, budgetRanges]
+      properties:
+        skinTypes:
+          type: array
+          items:
+            type: string
+        concerns:
+          type: array
+          items:
+            type: string
+        budgetRanges:
+          type: array
+          items:
+            $ref: "#/components/schemas/BudgetRange"
+
+    BudgetRange:
+      type: object
+      required: [label, max]
+      properties:
+        label:
+          type: string
+        max:
+          type: number

@@ -1,0 +1,256 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: GLOWBae AI Beauty Recommendation API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: recommendations
+    description: AI product recommendation operations
+  - name: products
+    description: Product catalog operations
+  - name: metadata
+    description: Skin profile metadata
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /recommendations:
+    post:
+      operationId: getRecommendations
+      tags: [recommendations]
+      summary: Get AI product recommendations
+      description: Uses cosine similarity to rank products based on skin profile and budget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkinProfileInput"
+      responses:
+        "200":
+          description: Ranked product recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductRecommendation"
+        "400":
+          description: Invalid input
+
+  /products:
+    get:
+      operationId: getProducts
+      tags: [products]
+      summary: Get all products
+      description: Returns the full product catalog
+      responses:
+        "200":
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/trending:
+    get:
+      operationId: getTrendingProducts
+      tags: [products]
+      summary: Get trending products
+      description: Returns top-rated and most popular products
+      responses:
+        "200":
+          description: Trending products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/categories:
+    get:
+      operationId: getProductCategories
+      tags: [products]
+      summary: Get product categories breakdown
+      description: Returns count of products per category
+      responses:
+        "200":
+          description: Category breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryCount"
+
+  /skin-metadata:
+    get:
+      operationId: getSkinMetadata
+      tags: [metadata]
+      summary: Get skin profile metadata
+      description: Returns all available skin types, concerns, and budget ranges for the quiz
+      responses:
+        "200":
+          description: Skin metadata options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkinMetadata"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    SkinProfileInput:
+      type: object
+      required:
+        - skinType
+        - concern
+        - budget
+      properties:
+        skinType:
+          type: string
+          description: "e.g. oily, dry, combination, normal, sensitive"
+        concern:
+          type: string
+          description: "e.g. acne, aging, brightening, hydration, pigmentation"
+        budget:
+          type: number
+          description: Max budget in INR
+
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - brand
+        - category
+        - price
+        - skinTypes
+        - concerns
+        - rating
+        - purplleUrl
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        brand:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        skinTypes:
+          type: array
+          items:
+            type: string
+        concerns:
+          type: array
+          items:
+            type: string
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        purplleUrl:
+          type: string
+          description: Direct link to Purplle product page for purchase
+        description:
+          type: ["string", "null"]
+        keyIngredients:
+          type: array
+          items:
+            type: string
+
+    ProductRecommendation:
+      type: object
+      required:
+        - product
+        - score
+        - rank
+        - matchReasons
+      properties:
+        product:
+          $ref: "#/components/schemas/Product"
+        score:
+          type: number
+          description: Cosine similarity score (0-1)
+        rank:
+          type: integer
+          description: Rank position (1 = best match)
+        matchReasons:
+          type: array
+          items:
+            type: string
+          description: Human-readable reasons why this product was recommended
+
+    CategoryCount:
+      type: object
+      required:
+        - category
+        - count
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+
+    SkinMetadata:
+      type: object
+      required:
+        - skinTypes
+        - concerns
+        - budgetRanges
+      properties:
+        skinTypes:
+          type: array
+          items:
+            type: string
+        concerns:
+          type: array
+          items:
+            type: string
+        budgetRanges:
+          type: array
+          items:
+            $ref: "#/components/schemas/BudgetRange"
+
+    BudgetRange:
+      type: object
+      required:
+        - label
+        - max
+      properties:
+        label:
+          type: string
+        max:
+          type: number
